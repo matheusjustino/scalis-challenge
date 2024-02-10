@@ -2,12 +2,14 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
+import { signOut } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
-import { HandCoins, Home } from 'lucide-react';
+import { HandCoins, Home, LogOut } from 'lucide-react';
 
 // COMPONENTS
 import { Sidebar } from './sidebar';
 import { SidebarItem } from './sidebar-item';
+import { Button } from '@/components/ui/button';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -44,9 +46,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         />
                     </Link>
                 ))}
+
+                <Button
+                    className="mx-0 px-0 text-left"
+                    variant="ghost"
+                    onClick={() => signOut()}
+                >
+                    <SidebarItem
+                        icon={<LogOut className="text-red-400" />}
+                        text={'Log out'}
+                    />
+                </Button>
             </Sidebar>
 
-            <div className="p-2 w-full h-screen">{children}</div>
+            <div className="p-2 w-full h-screen overflow-y-auto">
+                {children}
+            </div>
         </div>
     );
 };

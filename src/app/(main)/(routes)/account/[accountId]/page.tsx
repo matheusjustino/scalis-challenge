@@ -3,9 +3,9 @@
 import { NextPage } from 'next';
 import { useSession } from 'next-auth/react';
 import { z } from 'zod';
-import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { FieldValues, useForm } from 'react-hook-form';
+import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // ENUMS
 import { AccountType } from '@/enums/account-type.enum';
@@ -17,7 +17,13 @@ import { Spinner } from '@/components/ui/spinner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // SERVICES
-import { getAccount, getAccounts } from '@/services/bank-account';
+import {
+    getAccount,
+    getAccounts,
+    transferAmount,
+} from '@/services/bank-account';
+import { toast } from 'sonner';
+import { CheckingAccount, SavingsAccount } from '@prisma/client';
 
 const formSchema = z.object({
     amount: z.string().min(1).default('0'),
@@ -37,6 +43,7 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
     params: { accountId },
 }) => {
     const { data: session } = useSession();
+    const queryClient = useQueryClient();
     const form = useForm<FormType>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -59,6 +66,92 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
             return await getAccounts(session?.user.id, query);
         },
     });
+    const transferAmountMutation = useMutation({
+        mutationKey: [`transfer-amount-${session?.user.id}-${accountId}`],
+        mutationFn: async ({
+            targetAccountType,
+            targetAccountId,
+            ...payload
+        }: FormType) => {
+            return await transferAmount({
+                ...payload,
+                userId: session?.user.id,
+                targetAccountId,
+                targetAccountType,
+                sourceAccountId: accountId,
+                sourceAccountType: getAccountDetailsQuery.data
+                    ?.type as AccountType,
+            });
+        },
+        onSuccess: ({ sourceAccount, targetAccount }) => {
+            // update source acc
+            queryClient.setQueryData(
+                [`account-details-${accountId}`],
+                (oldData?: CheckingAccount | SavingsAccount) => {
+                    if (!oldData) return oldData;
+                    return sourceAccount;
+                },
+            );
+
+            // update target acc
+            queryClient.setQueryData(
+                [`account-details-${targetAccount.id}`],
+                (oldData?: CheckingAccount | SavingsAccount) => {
+                    if (!oldData) return oldData;
+                    return targetAccount;
+                },
+            );
+
+            // update account list at account details
+            queryClient.setQueryData(
+                [`list-user-accounts-${session?.user.id}-${accountId}`],
+                (oldData?: (CheckingAccount | SavingsAccount)[]) => {
+                    if (!oldData) return oldData;
+
+                    const accIndex = oldData.findIndex(
+                        (acc) => acc.id === targetAccount.id,
+                    );
+                    if (accIndex < 0) return oldData;
+
+                    const oldDataCopy = [...oldData];
+                    oldDataCopy[accIndex] = sourceAccount;
+
+                    return oldDataCopy;
+                },
+            );
+
+            // update account list at dashboard
+            queryClient.setQueryData(
+                [`list-accounts-${session?.user.id}`],
+                (oldData?: (CheckingAccount | SavingsAccount)[]) => {
+                    if (!oldData) return oldData;
+
+                    const sourceAccIndex = oldData.findIndex(
+                        (acc) => acc.id === sourceAccount.id,
+                    );
+                    const targetAccIndex = oldData.findIndex(
+                        (acc) => acc.id === targetAccount.id,
+                    );
+                    if (sourceAccIndex < 0 || targetAccIndex < 0)
+                        return oldData;
+
+                    const oldDataCopy = [...oldData];
+                    oldDataCopy[sourceAccIndex] = sourceAccount;
+                    oldDataCopy[targetAccIndex] = targetAccount;
+
+                    return oldDataCopy;
+                },
+            );
+
+            form.reset();
+            toast.success(`Transfer completed successfully`);
+        },
+        onError: (error: any) => {
+            console.error(error);
+            const errorMsg = error.response.data || `Something went wrong`;
+            toast.error(errorMsg, { description: `Try again later` });
+        },
+    });
 
     const handleSelectAccountToTransfer = (accountId: string) => {
         const selectedAcc = getUserAccounts.data?.find(
@@ -68,6 +161,24 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
             form.setValue('targetAccountId', accountId);
             form.setValue('targetAccountType', selectedAcc.type as AccountType);
         }
+    };
+
+    const handleTransferAmount: SubmitHandler<FormType> = async (
+        data,
+        event,
+    ) => {
+        event?.preventDefault();
+
+        if (
+            getAccountDetailsQuery.data &&
+            getAccountDetailsQuery.data.balance - Number(data.amount) <= 0
+        ) {
+            return toast.warning(`Insufficient funds`, {
+                description: 'Choose another value',
+            });
+        }
+
+        await transferAmountMutation.mutateAsync(data);
     };
 
     if (getAccountDetailsQuery.isLoading || getUserAccounts.isLoading) {
@@ -96,7 +207,7 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
             </h1>
 
             <form
-                // onSubmit={form.handleSubmit(handleCreateAccount)}
+                onSubmit={form.handleSubmit(handleTransferAmount)}
                 className="flex gap-6 flex-col mt-10 w-full md:w-1/2"
             >
                 <Input
@@ -142,10 +253,15 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
                         ))}
                     </RadioGroup>
 
-                    <Input type="number" placeholder="Amount" />
+                    <Input
+                        register={form.register('amount', { required: true })}
+                        errors={form.formState.errors}
+                        type="number"
+                        placeholder="Amount"
+                    />
                 </div>
 
-                <Button type="submit">Create</Button>
+                <Button type="submit">Transfer</Button>
             </form>
         </div>
     );

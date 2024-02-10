@@ -33,7 +33,7 @@ const DashboardPage: NextPage = () => {
         );
     }
 
-    if (accountsQuery.data?.length === 0) {
+    if (!accountsQuery.data || accountsQuery.data.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center w-full h-full gap-3">
                 <h1 className="text-xl text-indigo-800 font-semibold">{`You don't have any account yet. Please, create a new one.`}</h1>
@@ -45,9 +45,13 @@ const DashboardPage: NextPage = () => {
     }
 
     return (
-        <div className="flex flex-col sm:flex-row gap-4 w-full h-full">
-            {accountsQuery.data?.map((account) => (
-                <Link key={account.id} href={`/account/${account.id}`}>
+        <div className="flex justify-between gap-4 w-full h-0 flex-wrap">
+            {accountsQuery.data.map((account) => (
+                <Link
+                    key={account.id}
+                    href={`/account/${account.id}`}
+                    className="sm:max-w-[260px] w-full"
+                >
                     <div className="flex flex-col justify-between min-w-[220px] min-h-[120px] w-full bg-indigo-100 px-3 py-2 rounded-md">
                         <h1 className="text-xl font-bold">{account.name}</h1>
 

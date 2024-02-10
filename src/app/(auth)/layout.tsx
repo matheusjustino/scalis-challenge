@@ -26,7 +26,7 @@ export default function AuthLayout({
     }
 
     return (
-        <main className="flex items-center justify-center h-screen">
+        <main className="flex items-center justify-center h-screen p-2">
             {children}
         </main>
     );

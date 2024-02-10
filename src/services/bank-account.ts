@@ -1,17 +1,17 @@
+import { AxiosRequestConfig } from 'axios';
 import { CheckingAccount, SavingsAccount } from '@prisma/client';
 
 // LIBS
 import { api } from '@/lib/axios';
 
+// ENUMS
+import { AccountType } from '@/enums/account-type.enum';
+
 // INTERFACES
 import { CreateAccountPayload } from '@/interfaces/create-account.interface';
-import { AxiosRequestConfig } from 'axios';
-
-interface GetAccountsQuery {
-    exclude: {
-        accountsId: string[];
-    };
-}
+import { IGetAccountsQuery } from '@/interfaces/get-accounts-query.interface';
+import { ITransferAmountPayload } from '@/interfaces/transfer-amount-payload.interface';
+import { ITransferAmountResponse } from '@/interfaces/transfer-amount-response.interface';
 
 export const createNewAccount = async (payload: CreateAccountPayload) => {
     return api
@@ -19,7 +19,10 @@ export const createNewAccount = async (payload: CreateAccountPayload) => {
         .then((res) => res.data);
 };
 
-export const getAccounts = async (userId: string, query?: GetAccountsQuery) => {
+export const getAccounts = async (
+    userId: string,
+    query?: IGetAccountsQuery,
+) => {
     const config: AxiosRequestConfig = {
         params: {
             ...(!!query && { accountsId: query.exclude.accountsId }),
@@ -35,5 +38,11 @@ export const getAccount = async (userId: string, accountId: string) => {
         .get<
             CheckingAccount | SavingsAccount
         >(`/account/${userId}/${accountId}`)
+        .then((res) => res.data);
+};
+
+export const transferAmount = async (data: ITransferAmountPayload) => {
+    return api
+        .post<ITransferAmountResponse>(`/account/transfer`, data)
         .then((res) => res.data);
 };
