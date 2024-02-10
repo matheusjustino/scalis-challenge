@@ -14,8 +14,6 @@ export interface IRegisterUser {
 export async function POST(req: Request) {
     const { password, ...body } = (await req.json()) as IRegisterUser;
 
-    console.log(req.body);
-
     const emailAlreadyUsed = await prisma.user.findFirst({
         where: {
             email: body.email,

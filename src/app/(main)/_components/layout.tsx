@@ -46,7 +46,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 ))}
             </Sidebar>
 
-            <div className="p-2 w-full h-full">{children}</div>
+            <div className="p-2 w-full h-screen">{children}</div>
         </div>
     );
 };
