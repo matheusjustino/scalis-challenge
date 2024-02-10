@@ -1,15 +1,19 @@
 'use client';
 
 import { NextPage } from 'next';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 
+// UTILS
+import { formatBalance } from '@/utils/format-balance';
+
 // SERVICES
 import { getAccounts } from '@/services/bank-account';
+
+// COMPONENTS
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
-import { formatBalance } from '@/utils/format-balance';
 
 const DashboardPage: NextPage = () => {
     const { data: session } = useSession();
