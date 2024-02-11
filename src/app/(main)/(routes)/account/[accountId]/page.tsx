@@ -2,13 +2,6 @@
 
 import { NextPage } from 'next';
 import { useSession } from 'next-auth/react';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-
-// ENUMS
-import { AccountType } from '@/enums/account-type.enum';
 
 // COMPONENTS
 import { Input } from '@/components/ui/input';
@@ -17,21 +10,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 // SERVICES
-import {
-    getAccount,
-    getAccounts,
-    transferAmount,
-} from '@/services/bank-account';
-import { toast } from 'sonner';
-import { CheckingAccount, SavingsAccount } from '@prisma/client';
-
-const formSchema = z.object({
-    amount: z.string().min(1).default('0'),
-    targetAccountId: z.string().default(''),
-    targetAccountType: z.nativeEnum(AccountType).default(AccountType.CHECKING),
-});
-
-type FormType = z.infer<typeof formSchema & FieldValues>;
+import { useAccountDetails } from './useAccountDetails';
 
 interface AccountDetailsPageProps {
     params: {
@@ -43,143 +22,13 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
     params: { accountId },
 }) => {
     const { data: session } = useSession();
-    const queryClient = useQueryClient();
-    const form = useForm<FormType>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            amount: '0',
-            targetAccountType: AccountType.CHECKING,
-        },
-    });
-    const getAccountDetailsQuery = useQuery({
-        queryKey: [`account-details-${accountId}`],
-        queryFn: async () => await getAccount(session?.user.id, accountId),
-    });
-    const getUserAccounts = useQuery({
-        queryKey: [`list-user-accounts-${session?.user.id}-${accountId}`],
-        queryFn: async () => {
-            const query = {
-                exclude: {
-                    accountsId: [accountId],
-                },
-            };
-            return await getAccounts(session?.user.id, query);
-        },
-    });
-    const transferAmountMutation = useMutation({
-        mutationKey: [`transfer-amount-${session?.user.id}-${accountId}`],
-        mutationFn: async ({
-            targetAccountType,
-            targetAccountId,
-            ...payload
-        }: FormType) => {
-            return await transferAmount({
-                ...payload,
-                userId: session?.user.id,
-                targetAccountId,
-                targetAccountType,
-                sourceAccountId: accountId,
-                sourceAccountType: getAccountDetailsQuery.data
-                    ?.type as AccountType,
-            });
-        },
-        onSuccess: ({ sourceAccount, targetAccount }) => {
-            // update source acc
-            queryClient.setQueryData(
-                [`account-details-${accountId}`],
-                (oldData?: CheckingAccount | SavingsAccount) => {
-                    if (!oldData) return oldData;
-                    return sourceAccount;
-                },
-            );
-
-            // update target acc
-            queryClient.setQueryData(
-                [`account-details-${targetAccount.id}`],
-                (oldData?: CheckingAccount | SavingsAccount) => {
-                    if (!oldData) return oldData;
-                    return targetAccount;
-                },
-            );
-
-            // update account list at account details
-            queryClient.setQueryData(
-                [`list-user-accounts-${session?.user.id}-${accountId}`],
-                (oldData?: (CheckingAccount | SavingsAccount)[]) => {
-                    if (!oldData) return oldData;
-
-                    const targetAccIndex = oldData.findIndex(
-                        (acc) => acc.id === targetAccount.id,
-                    );
-                    if (targetAccIndex < 0) return oldData;
-
-                    const oldDataCopy = [...oldData];
-                    oldDataCopy[targetAccIndex] = targetAccount;
-
-                    return oldDataCopy;
-                },
-            );
-
-            // update account list at dashboard
-            queryClient.setQueryData(
-                [`list-accounts-${session?.user.id}`],
-                (oldData?: (CheckingAccount | SavingsAccount)[]) => {
-                    if (!oldData) return oldData;
-
-                    const sourceAccIndex = oldData.findIndex(
-                        (acc) => acc.id === sourceAccount.id,
-                    );
-                    const targetAccIndex = oldData.findIndex(
-                        (acc) => acc.id === targetAccount.id,
-                    );
-                    if (sourceAccIndex < 0 || targetAccIndex < 0)
-                        return oldData;
-
-                    const oldDataCopy = [...oldData];
-                    oldDataCopy[sourceAccIndex] = sourceAccount;
-                    oldDataCopy[targetAccIndex] = targetAccount;
-
-                    return oldDataCopy;
-                },
-            );
-
-            form.reset();
-            toast.success(`Transfer completed successfully`);
-        },
-        onError: (error: any) => {
-            console.error(error);
-            const errorMsg = error.response.data || `Something went wrong`;
-            toast.error(errorMsg, { description: `Try again later` });
-        },
-    });
-
-    const handleSelectAccountToTransfer = (accountId: string) => {
-        const selectedAcc = getUserAccounts.data?.find(
-            (acc) => acc.id === accountId,
-        );
-        if (selectedAcc) {
-            form.setValue('targetAccountId', accountId);
-            form.setValue('targetAccountType', selectedAcc.type as AccountType);
-        }
-    };
-
-    const handleTransferAmount: SubmitHandler<FormType> = async (
-        data,
-        event,
-    ) => {
-        event?.preventDefault();
-
-        if (
-            getAccountDetailsQuery.data &&
-            getAccountDetailsQuery.data.balance - Number(data.amount) <= 0
-        ) {
-            return toast.warning(`Insufficient funds`, {
-                description: 'Choose another value',
-            });
-        }
-
-        await transferAmountMutation.mutateAsync(data);
-    };
+    const {
+        form,
+        getAccountDetailsQuery,
+        getUserAccounts,
+        handleSelectAccountToTransfer,
+        handleTransferAmount,
+    } = useAccountDetails(session?.user.id, accountId);
 
     if (getAccountDetailsQuery.isLoading || getUserAccounts.isLoading) {
         return (

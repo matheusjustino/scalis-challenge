@@ -13,23 +13,22 @@ export async function POST(req: Request) {
     const { type, balance, ...body } =
         (await req.json()) as CreateAccountPayload;
 
-    if (type === AccountType.CHECKING) {
-        await prisma.checkingAccount.create({
-            data: {
-                ...body,
-                type,
-                balance: Number(balance),
-            },
-        });
-    } else {
-        await prisma.savingsAccount.create({
-            data: {
-                ...body,
-                type,
-                balance: Number(balance),
-            },
-        });
-    }
+    const newAcc =
+        type === AccountType.CHECKING
+            ? await prisma.checkingAccount.create({
+                  data: {
+                      ...body,
+                      type,
+                      balance: Number(balance),
+                  },
+              })
+            : await prisma.savingsAccount.create({
+                  data: {
+                      ...body,
+                      type,
+                      balance: Number(balance),
+                  },
+              });
 
-    return NextResponse.json(true, { status: 201 });
+    return NextResponse.json(newAcc, { status: 201 });
 }

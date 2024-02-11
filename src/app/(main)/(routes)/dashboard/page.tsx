@@ -2,14 +2,13 @@
 
 import { NextPage } from 'next';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
 
 // UTILS
 import { formatBalance } from '@/utils/format-balance';
 
-// SERVICES
-import { getAccounts } from '@/services/bank-account';
+// HOOKS
+import { useDashboard } from './useDashboard';
 
 // COMPONENTS
 import { Spinner } from '@/components/ui/spinner';
@@ -17,10 +16,7 @@ import { Button } from '@/components/ui/button';
 
 const DashboardPage: NextPage = () => {
     const { data: session } = useSession();
-    const accountsQuery = useQuery({
-        queryKey: [`list-accounts-${session?.user.id}`],
-        queryFn: async () => await getAccounts(session?.user.id),
-    });
+    const { accountsQuery } = useDashboard(session?.user.id);
 
     if (accountsQuery.isLoading) {
         return (

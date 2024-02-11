@@ -41,7 +41,7 @@ const NewAccountPage: NextPage = () => {
                 <Input
                     id="balance"
                     placeholder="Account Balance"
-                    type="number"
+                    type="text"
                     register={form.register('balance', { required: true })}
                     errors={form.formState.errors}
                 />
