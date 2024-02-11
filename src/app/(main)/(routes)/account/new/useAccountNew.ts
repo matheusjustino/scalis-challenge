@@ -63,7 +63,6 @@ const useAccountNew = (userId: string) => {
     ) => {
         event?.preventDefault();
 
-        console.log(Number(data.balance));
         if (!Number(data.balance)) {
             return toast.warning(`Invalid balance value`);
         }
