@@ -108,13 +108,13 @@ const AccountDetailsPage: NextPage<AccountDetailsPageProps> = ({
                 (oldData?: (CheckingAccount | SavingsAccount)[]) => {
                     if (!oldData) return oldData;
 
-                    const accIndex = oldData.findIndex(
+                    const targetAccIndex = oldData.findIndex(
                         (acc) => acc.id === targetAccount.id,
                     );
-                    if (accIndex < 0) return oldData;
+                    if (targetAccIndex < 0) return oldData;
 
                     const oldDataCopy = [...oldData];
-                    oldDataCopy[accIndex] = sourceAccount;
+                    oldDataCopy[targetAccIndex] = targetAccount;
 
                     return oldDataCopy;
                 },
