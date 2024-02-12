@@ -46,7 +46,9 @@ const SignInPage: NextPage = () => {
                         <Button variant="link">Sign up</Button>
                     </Link>
 
-                    <Button>Sign in</Button>
+                    <Button loading={isLoading} disabled={isLoading}>
+                        Sign in
+                    </Button>
                 </div>
             </form>
         </div>

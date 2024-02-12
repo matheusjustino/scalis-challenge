@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
@@ -6,7 +7,6 @@ import { toast } from 'sonner';
 
 // LIBS
 import { api } from '@/lib/axios';
-import { useRouter } from 'next/navigation';
 
 const formSchema = z.object({
     firstName: z.string().min(1),

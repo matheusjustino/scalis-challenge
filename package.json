@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
+    "test:cov": "vitest run --coverage",
     "format": "prettier --write \"./**/*.{ts,tsx,js,jsx}\"",
     "migrate:dev": "prisma migrate dev"
   },
@@ -49,6 +50,7 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "@vitejs/plugin-react": "^4.2.1",
+    "@vitest/coverage-istanbul": "^1.2.2",
     "autoprefixer": "^10.0.1",
     "eslint": "^8.56.0",
     "eslint-config-next": "^14.1.0",

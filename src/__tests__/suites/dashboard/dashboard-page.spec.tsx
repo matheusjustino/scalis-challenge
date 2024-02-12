@@ -17,7 +17,7 @@ import DashboardPage from '@/app/(main)/(routes)/dashboard/page';
 vi.mock('next-auth/react');
 vi.mock(`@/app/(main)/(routes)/dashboard/useDashboard`);
 
-describe(`Dashboard Page`, async () => {
+describe(`Dashboard Page`, () => {
     test(`Should render a loading message`, () => {
         const userId = `userId`;
         const mockedSession = useSession as Mock;

@@ -4,9 +4,6 @@ import { CheckingAccount, SavingsAccount } from '@prisma/client';
 // LIBS
 import { api } from '@/lib/axios';
 
-// ENUMS
-import { AccountType } from '@/enums/account-type.enum';
-
 // INTERFACES
 import { CreateAccountPayload } from '@/interfaces/create-account.interface';
 import { IGetAccountsQuery } from '@/interfaces/get-accounts-query.interface';
